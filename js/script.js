@@ -2,71 +2,135 @@
    PACIFIX - FRONTEND LOGIC & STATE MANAGEMENT
    ========================================== */
 
+// State Management
 let productsState = [];
-let cart = JSON.parse(localStorage.getItem('pacifix_cart')) || [];
+let cart = JSON.parse(localStorage.getItem("pacifix_cart")) || [];
+let currentCurrency = localStorage.getItem("pacifix_currency") || "USD";
+let currentCategory = "all";
 
-// Initialize Page
-document.addEventListener('DOMContentLoaded', () => {
-    updateCartBadge();
+// Currency Configuration
+const currencyRates = {
+    USD: { symbol: "$", rate: 1.0 },
+    EUR: { symbol: "€", rate: 0.92 }
+};
+
+// DOM Node References
+const currencyToggle = document.getElementById("currency-toggle");
+const currencyLabel = document.getElementById("currency-label");
+const themeToggle = document.getElementById("theme-toggle");
+const cartBtn = document.getElementById("cart-icon-btn") || document.getElementById("cart-btn");
+const closeCartBtn = document.getElementById("close-drawer-btn") || document.getElementById("close-cart");
+const cartDrawer = document.getElementById("cart-drawer");
+const overlay = document.getElementById("drawer-overlay") || document.getElementById("overlay");
+const continueShoppingBtn = document.getElementById("continue-shopping");
+const buyNowBtn = document.getElementById("buy-now-btn");
+
+// Initialize Page Lifecycle
+document.addEventListener("DOMContentLoaded", () => {
+    if (window.lucide) lucide.createIcons();
     
-    // Check if on product list page or detail page
-    if (document.getElementById('product-grid')) {
+    // Sync initial UI states
+    if (currencyLabel) currencyLabel.textContent = currentCurrency;
+    updateCartBadge();
+    setupEventListeners();
+
+    // Route-based data loading
+    if (document.getElementById("product-grid")) {
         loadProductCatalog();
-    } else if (document.getElementById('product-detail-container')) {
+    } else if (document.getElementById("product-detail-container") || document.getElementById("main-product-img")) {
         loadProductDetail();
     }
-    
-    setupCartDrawerEvents();
 });
 
 /* ------------------------------------------
-   DATABASE FETCH & CARD RENDERING (index.html)
+   UTILITY & FORMATTING HELPERS
    ------------------------------------------ */
-async function loadProductCatalog() {
-    const grid = document.getElementById('product-grid');
-    if (!grid) return;
-
-    try {
-        const response = await fetch('/api/products');
-        if (!response.ok) throw new Error('Failed to fetch product catalog');
-        
-        productsState = await response.json();
-        renderProductCards(productsState);
-    } catch (err) {
-        console.error('Catalog Error:', err);
-        grid.innerHTML = `<p class="error-msg">Failed to load products from database.</p>`;
-    }
+function formatPrice(amountInUSD) {
+    if (amountInUSD === undefined || amountInUSD === null) return "$0.00";
+    const { symbol, rate } = currencyRates[currentCurrency] || currencyRates.USD;
+    const converted = (Number(amountInUSD) * rate).toFixed(2);
+    return `${symbol}${converted}`;
 }
 
 function getMainImage(product) {
     if (product.images && product.images["1"]) {
         return product.images["1"];
     }
-    if (typeof product.image === 'string' && product.image.trim() !== "") {
+    if (typeof product.image === "string" && product.image.trim() !== "") {
         return product.image;
     }
-    return 'https://via.placeholder.com/400x400?text=No+Image';
+    return "https://via.placeholder.com/400x400?text=No+Image";
 }
 
-function renderProductCards(products) {
-    const grid = document.getElementById('product-grid');
+function saveState() {
+    localStorage.setItem("pacifix_cart", JSON.stringify(cart));
+    localStorage.setItem("pacifix_currency", currentCurrency);
+}
+
+/* ------------------------------------------
+   CATALOG FETCH & RENDERING (index.html)
+   ------------------------------------------ */
+async function loadProductCatalog() {
+    const grid = document.getElementById("product-grid");
     if (!grid) return;
 
-    grid.innerHTML = products.map(product => {
+    try {
+        const response = await fetch("/api/products");
+        if (!response.ok) throw new Error("Failed to fetch product catalog");
+
+        productsState = await response.json();
+        renderProductCards();
+    } catch (err) {
+        console.error("Catalog Error:", err);
+        grid.innerHTML = `<p style="grid-column: 1/-1; color: red; text-align: center;">Failed to load products from database.</p>`;
+    }
+}
+
+function renderProductCards() {
+    const grid = document.getElementById("product-grid");
+    if (!grid) return;
+
+    const searchInput = document.getElementById("search-input");
+    const query = searchInput ? searchInput.value.toLowerCase().trim() : "";
+
+    const filtered = productsState.filter((p) => {
+        const matchesCategory = currentCategory === "all" || p.category === currentCategory;
+        const matchesSearch = p.name.toLowerCase().includes(query);
+        return matchesCategory && matchesSearch;
+    });
+
+    const productCount = document.getElementById("product-count");
+    if (productCount) {
+        productCount.textContent = `${filtered.length} product${filtered.length === 1 ? "" : "s"}`;
+    }
+
+    if (filtered.length === 0) {
+        grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 3rem 0;">No products found.</p>`;
+        return;
+    }
+
+    grid.innerHTML = filtered.map((product) => {
         const primaryImg = getMainImage(product);
-        
+        const originalPriceHTML = product.originalPriceUSD 
+            ? `<span class="original-price" style="text-decoration: line-through; opacity: 0.6; margin-left: 0.5rem;">${formatPrice(product.originalPriceUSD)}</span>` 
+            : "";
+
         return `
-            <div class="product-card">
+            <article class="product-card">
                 <a href="product.html?id=${product.id}" class="card-media-link">
+                    <span class="tag">${product.tag || product.category || "ITEM"}</span>
                     <img src="${primaryImg}" alt="${product.name}" class="card-img" loading="lazy" />
                 </a>
                 <div class="card-info">
-                    <span class="category-tag">${product.category || 'General'}</span>
+                    <span class="category-tag">${product.category || "General"}</span>
                     <a href="product.html?id=${product.id}" class="card-title-link">
                         <h3 class="product-title">${product.name}</h3>
                     </a>
                     <div class="card-bottom">
-                        <span class="current-price">$${Number(product.priceUSD).toFixed(2)}</span>
+                        <div class="price-container">
+                            <span class="current-price">${formatPrice(product.priceUSD)}</span>
+                            ${originalPriceHTML}
+                        </div>
                         <button class="add-to-cart-btn" onclick="addToCart(${product.id}, event)">
                             <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
@@ -75,71 +139,90 @@ function renderProductCards(products) {
                         </button>
                     </div>
                 </div>
-            </div>
+            </article>
         `;
-    }).join('');
+    }).join("");
 }
 
 /* ------------------------------------------
    MULTI-IMAGE DETAIL PAGE (product.html)
    ------------------------------------------ */
 async function loadProductDetail() {
-    const detailContainer = document.getElementById('product-detail-container');
-    if (!detailContainer) return;
-
+    const detailContainer = document.getElementById("product-detail-container");
     const urlParams = new URLSearchParams(window.location.search);
-    const productId = urlParams.get('id');
+    let productId = urlParams.get("id");
+
+    // Fallback URL query parsing if formatted like ?1
+    if (!productId && window.location.search) {
+        const rawId = window.location.search.replace("?", "");
+        productId = parseInt(rawId, 10);
+    }
 
     if (!productId) {
-        detailContainer.innerHTML = `<p class="error-msg">Product ID missing in URL.</p>`;
+        if (detailContainer) detailContainer.innerHTML = `<p class="error-msg">Product ID missing in URL.</p>`;
         return;
     }
 
     try {
         const response = await fetch(`/api/products?id=${productId}`);
-        if (!response.ok) throw new Error('Product not found');
-        
+        if (!response.ok) throw new Error("Product not found");
+
         const product = await response.json();
-        
-        // Extract array of images ordered by keys ("1", "2", "3"...)
+
+        // Extract ordered images
         let imageList = [];
-        if (product.images && typeof product.images === 'object') {
+        if (product.images && typeof product.images === "object") {
             const keys = Object.keys(product.images).sort((a, b) => Number(a) - Number(b));
-            imageList = keys.map(k => product.images[k]).filter(url => url && url.trim() !== "");
+            imageList = keys.map((k) => product.images[k]).filter((url) => url && url.trim() !== "");
         }
-        
-        // Fallback if no images object or empty
+
         if (imageList.length === 0) {
             imageList.push(getMainImage(product));
         }
 
         renderProductDetailPage(product, imageList);
     } catch (err) {
-        console.error('Detail Page Error:', err);
-        detailContainer.innerHTML = `<p class="error-msg">Unable to load product details.</p>`;
+        console.error("Detail Page Error:", err);
+        if (detailContainer) detailContainer.innerHTML = `<p class="error-msg">Unable to load product details.</p>`;
     }
 }
 
 function renderProductDetailPage(product, imageList) {
-    const detailContainer = document.getElementById('product-detail-container');
-    
-    // Main main-image starts with index 0
+    const detailContainer = document.getElementById("product-detail-container");
+    if (!detailContainer) return;
+
     const mainImgSrc = imageList[0];
-    
-    // Build thumbnails only if there are 2 or more images
     const hasMultipleImages = imageList.length > 1;
+
     const thumbnailsHTML = hasMultipleImages ? `
-        <div class="thumbnail-gallery">
+        <div class="thumbnail-gallery" id="thumbnail-list">
             ${imageList.map((imgUrl, idx) => `
                 <img 
                     src="${imgUrl}" 
-                    class="thumb-item ${idx === 0 ? 'active' : ''}" 
+                    class="thumb-item ${idx === 0 ? "active" : ""}" 
                     onclick="switchMainImage('${imgUrl}', this)"
                     alt="Thumbnail ${idx + 1}"
                 />
-            `).join('')}
+            `).join("")}
         </div>
-    ` : '';
+    ` : "";
+
+    let specsHTML = "";
+    if (product.specs && typeof product.specs === "object") {
+        specsHTML = `
+            <div class="specs-container" style="margin-top: 1.5rem;">
+                <h4>Specifications</h4>
+                <div class="specs-table" id="specs-table">
+                    ${Object.entries(product.specs).map(([k, v]) => `
+                        <div class="spec-row">
+                            <div class="spec-key">${k}</div>
+                            <div class="spec-val">${v}</div>
+                        </div>
+                    `).join("")}
+                </div>
+            </div>
+        `;
+    }
 
     detailContainer.innerHTML = `
         <div class="product-detail-layout">
@@ -151,13 +234,22 @@ function renderProductDetailPage(product, imageList) {
             </div>
             
             <div class="info-column">
-                <span class="detail-category">${product.category || 'General'}</span>
-                <h1 class="p-title">${product.name}</h1>
-                <p class="p-price">$${Number(product.priceUSD).toFixed(2)}</p>
-                <p class="p-desc">${product.description || 'No description provided.'}</p>
+                <span class="detail-category">${(product.category || "General").toUpperCase()}</span>
+                <h1 class="p-title" id="p-title">${product.name}</h1>
+                <p class="p-brand" id="p-brand" style="opacity:0.7;">By ${product.brand || "Pacifix"}</p>
                 
-                <div class="p-action-buttons">
-                    <button class="btn-primary" onclick="addToCart(${product.id})">Add to Cart</button>
+                <div class="price-container" style="margin: 1rem 0;">
+                    <span class="p-price" id="p-price" style="font-size: 1.5rem; font-weight: bold;">${formatPrice(product.priceUSD)}</span>
+                    ${product.originalPriceUSD ? `<span class="p-orig-price" style="text-decoration: line-through; opacity: 0.6; margin-left: 0.5rem;">${formatPrice(product.originalPriceUSD)}</span>` : ""}
+                </div>
+
+                <p class="p-desc" id="product-description">${product.description || "No description provided."}</p>
+                
+                ${specsHTML}
+
+                <div class="p-action-buttons" style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                    <button class="btn-primary" id="p-add-cart-btn" onclick="addToCart(${product.id})">Add to Cart</button>
+                    <button class="btn-secondary" id="p-buy-now-btn" onclick="buyNowSingle(${product.id})">Buy Now</button>
                 </div>
             </div>
         </div>
@@ -165,11 +257,11 @@ function renderProductDetailPage(product, imageList) {
 }
 
 function switchMainImage(src, thumbElement) {
-    const mainImg = document.getElementById('primary-product-image');
+    const mainImg = document.getElementById("primary-product-image") || document.getElementById("main-product-img");
     if (mainImg) mainImg.src = src;
 
-    document.querySelectorAll('.thumb-item').forEach(el => el.classList.remove('active'));
-    if (thumbElement) thumbElement.classList.add('active');
+    document.querySelectorAll(".thumb-item").forEach((el) => el.classList.remove("active"));
+    if (thumbElement) thumbElement.classList.add("active");
 }
 
 /* ------------------------------------------
@@ -178,22 +270,20 @@ function switchMainImage(src, thumbElement) {
 function addToCart(productId, event) {
     if (event) event.stopPropagation();
 
-    // If item exists in current state, fetch details
-    let product = productsState.find(p => p.id == productId);
-    
+    let product = productsState.find((p) => p.id == productId);
+
     if (!product) {
-        // Fallback fetch if added directly from product details page
         fetch(`/api/products?id=${productId}`)
-            .then(res => res.json())
-            .then(data => executeAddToCart(data))
-            .catch(err => console.error(err));
+            .then((res) => res.json())
+            .then((data) => executeAddToCart(data))
+            .catch((err) => console.error(err));
     } else {
         executeAddToCart(product);
     }
 }
 
 function executeAddToCart(product) {
-    const existing = cart.find(item => item.id == product.id);
+    const existing = cart.find((item) => item.id == product.id);
     if (existing) {
         existing.quantity += 1;
     } else {
@@ -206,75 +296,155 @@ function executeAddToCart(product) {
         });
     }
 
-    saveCart();
+    saveState();
+    updateCartBadge();
     openCartDrawer();
 }
 
+function buyNowSingle(productId) {
+    addToCart(productId);
+    alert("Directing to payment...");
+}
+
 function updateCartBadge() {
-    const badge = document.getElementById('cart-count');
+    const badge = document.getElementById("cart-count") || document.getElementById("cart-badge");
     if (!badge) return;
     const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
     badge.textContent = totalItems;
 }
 
-function saveCart() {
-    localStorage.setItem('pacifix_cart', JSON.stringify(cart));
+function renderCartItems() {
+    const cartContainer = document.getElementById("cart-items-container") || document.getElementById("cart-items");
+    const totalContainer = document.getElementById("cart-total-price");
+    const emptyCartView = document.getElementById("empty-cart");
+    const cartContentWrapper = document.getElementById("cart-content-wrapper");
+
+    if (!cartContainer) return;
+
+    if (cart.length === 0) {
+        if (emptyCartView) emptyCartView.style.display = "flex";
+        if (cartContentWrapper) cartContentWrapper.style.display = "none";
+        cartContainer.innerHTML = `<p class="empty-cart" style="text-align: center; padding: 2rem;">Your cart is empty.</p>`;
+        if (totalContainer) totalContainer.textContent = formatPrice(0);
+        return;
+    }
+
+    if (emptyCartView) emptyCartView.style.display = "none";
+    if (cartContentWrapper) cartContentWrapper.style.display = "flex";
+
+    let grandTotalUSD = 0;
+    cartContainer.innerHTML = cart.map((item) => {
+        const itemTotalUSD = item.priceUSD * item.quantity;
+        grandTotalUSD += itemTotalUSD;
+
+        return `
+            <div class="cart-item">
+                <img src="${item.image}" alt="${item.name}" class="cart-item-img" />
+                <div class="cart-item-info">
+                    <h4 class="cart-item-title">${item.name}</h4>
+                    <p class="cart-item-price">${formatPrice(item.priceUSD)} x ${item.quantity}</p>
+                </div>
+                <button class="remove-btn" onclick="removeFromCart(${item.id})" aria-label="Remove item">&times;</button>
+            </div>
+        `;
+    }).join("");
+
+    if (totalContainer) totalContainer.textContent = formatPrice(grandTotalUSD);
+}
+
+function removeFromCart(productId) {
+    cart = cart.filter((item) => item.id != productId);
+    saveState();
     updateCartBadge();
     renderCartItems();
 }
 
-function setupCartDrawerEvents() {
-    const cartIcon = document.getElementById('cart-icon-btn');
-    const closeBtn = document.getElementById('close-drawer-btn');
-    const overlay = document.getElementById('drawer-overlay');
-
-    if (cartIcon) cartIcon.addEventListener('click', openCartDrawer);
-    if (closeBtn) closeBtn.addEventListener('click', closeCartDrawer);
-    if (overlay) overlay.addEventListener('click', closeCartDrawer);
-}
-
 function openCartDrawer() {
     renderCartItems();
-    document.getElementById('cart-drawer')?.classList.add('open');
-    document.getElementById('drawer-overlay')?.classList.add('open');
+    if (cartDrawer) {
+        cartDrawer.classList.add("open");
+        cartDrawer.classList.add("active");
+    }
+    if (overlay) {
+        overlay.classList.add("open");
+        overlay.classList.add("active");
+    }
+    document.body.style.overflow = "hidden";
 }
 
 function closeCartDrawer() {
-    document.getElementById('cart-drawer')?.classList.remove('open');
-    document.getElementById('drawer-overlay')?.classList.remove('open');
+    if (cartDrawer) {
+        cartDrawer.classList.remove("open");
+        cartDrawer.classList.remove("active");
+    }
+    if (overlay) {
+        overlay.classList.remove("open");
+        overlay.classList.remove("active");
+    }
+    document.body.style.overflow = "";
 }
 
-function renderCartItems() {
-    const cartContainer = document.getElementById('cart-items-container');
-    const totalContainer = document.getElementById('cart-total-price');
-    if (!cartContainer) return;
-
-    if (cart.length === 0) {
-        cartContainer.innerHTML = `<p class="empty-cart">Your cart is empty.</p>`;
-        if (totalContainer) totalContainer.textContent = '$0.00';
-        return;
+/* ------------------------------------------
+   GLOBAL EVENT LISTENERS
+   ------------------------------------------ */
+function setupEventListeners() {
+    // Currency Toggle
+    if (currencyToggle) {
+        currencyToggle.addEventListener("click", () => {
+            currentCurrency = currentCurrency === "USD" ? "EUR" : "USD";
+            if (currencyLabel) currencyLabel.textContent = currentCurrency;
+            saveState();
+            renderProductCards();
+            renderCartItems();
+            
+            // Re-render product detail prices if on detail page
+            if (document.getElementById("product-detail-container")) {
+                loadProductDetail();
+            }
+        });
     }
 
-    let grandTotal = 0;
-    cartContainer.innerHTML = cart.map(item => {
-        const itemTotal = item.priceUSD * item.quantity;
-        grandTotal += itemTotal;
-        return `
-            <div class="cart-item">
-                <img src="${item.image}" alt="${item.name}" />
-                <div class="cart-item-info">
-                    <h4>${item.name}</h4>
-                    <p>$${item.priceUSD.toFixed(2)} x ${item.quantity}</p>
-                </div>
-                <button class="remove-btn" onclick="removeFromCart(${item.id})">&times;</button>
-            </div>
-        `;
-    }).join('');
+    // Theme Toggle
+    if (themeToggle) {
+        themeToggle.addEventListener("click", () => {
+            const currentTheme = document.documentElement.getAttribute("data-theme");
+            const newTheme = currentTheme === "dark" ? "light" : "dark";
+            document.documentElement.setAttribute("data-theme", newTheme);
+            const icon = themeToggle.querySelector("i");
+            if (icon) icon.setAttribute("data-lucide", newTheme === "dark" ? "moon" : "sun");
+            if (window.lucide) lucide.createIcons();
+        });
+    }
 
-    if (totalContainer) totalContainer.textContent = `$${grandTotal.toFixed(2)}`;
-}
+    // Category Filtering
+    document.querySelectorAll(".category-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+            document.querySelectorAll(".category-btn").forEach((b) => b.classList.remove("active"));
+            btn.classList.add("active");
+            currentCategory = btn.dataset.category || "all";
+            renderProductCards();
+        });
+    });
 
-function removeFromCart(productId) {
-    cart = cart.filter(item => item.id != productId);
-    saveCart();
+    // Live Search
+    const searchInput = document.getElementById("search-input");
+    if (searchInput) {
+        searchInput.addEventListener("input", renderProductCards);
+    }
+
+    // Drawer Listeners
+    if (cartBtn) cartBtn.addEventListener("click", openCartDrawer);
+    if (closeCartBtn) closeCartBtn.addEventListener("click", closeCartDrawer);
+    if (overlay) overlay.addEventListener("click", closeCartDrawer);
+    if (continueShoppingBtn) continueShoppingBtn.addEventListener("click", closeCartDrawer);
+
+    if (buyNowBtn) {
+        buyNowBtn.addEventListener("click", () => {
+            if (cart.length === 0) {
+                alert("Your cart is empty!");
+                return;
+            }
+            alert(`Proceeding to checkout with ${cart.length} item(s)!`);
+        });
+    }
 }
