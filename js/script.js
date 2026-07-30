@@ -1,266 +1,280 @@
-let products = []; // Populated via MongoDB API
-let cart = JSON.parse(localStorage.getItem("pacifix_cart")) || [];
-let currentCurrency = localStorage.getItem("pacifix_currency") || "USD";
-let currentCategory = "all";
+/* ==========================================
+   PACIFIX - FRONTEND LOGIC & STATE MANAGEMENT
+   ========================================== */
 
-const currencyRates = {
-    USD: { symbol: "$", rate: 1.0 },
-    EUR: { symbol: "€", rate: 0.92 }
-};
+let productsState = [];
+let cart = JSON.parse(localStorage.getItem('pacifix_cart')) || [];
 
-// DOM Nodes
-const currencyToggle = document.getElementById("currency-toggle");
-const currencyLabel = document.getElementById("currency-label");
-const themeToggle = document.getElementById("theme-toggle");
-const cartBtn = document.getElementById("cart-btn");
-const closeCartBtn = document.getElementById("close-cart");
-const cartDrawer = document.getElementById("cart-drawer");
-const overlay = document.getElementById("overlay");
-const continueShoppingBtn = document.getElementById("continue-shopping");
-const emptyCartView = document.getElementById("empty-cart");
-const cartContentWrapper = document.getElementById("cart-content-wrapper");
-const cartItemsContainer = document.getElementById("cart-items");
-const buyNowBtn = document.getElementById("buy-now-btn");
+// Initialize Page
+document.addEventListener('DOMContentLoaded', () => {
+    updateCartBadge();
+    
+    // Check if on product list page or detail page
+    if (document.getElementById('product-grid')) {
+        loadProductCatalog();
+    } else if (document.getElementById('product-detail-container')) {
+        loadProductDetail();
+    }
+    
+    setupCartDrawerEvents();
+});
 
-if (window.lucide) lucide.createIcons();
+/* ------------------------------------------
+   DATABASE FETCH & CARD RENDERING (index.html)
+   ------------------------------------------ */
+async function loadProductCatalog() {
+    const grid = document.getElementById('product-grid');
+    if (!grid) return;
 
-function formatPrice(amountInUSD) {
-    if (!amountInUSD) return "$0.00";
-    const { symbol, rate } = currencyRates[currentCurrency];
-    const converted = (amountInUSD * rate).toFixed(2);
-    return `${symbol}${converted}`;
-}
-
-function saveState() {
-    localStorage.setItem("pacifix_cart", JSON.stringify(cart));
-    localStorage.setItem("pacifix_currency", currentCurrency);
-}
-
-// Fetch products from Vercel API (Connecting to MongoDB)
-async function fetchProductsFromMongoDB() {
     try {
-        const response = await fetch("/api/products");
-        if (!response.ok) throw new Error("Failed to load products");
-        products = await response.json();
-        renderProducts();
-        loadProductDetailsPage();
+        const response = await fetch('/api/products');
+        if (!response.ok) throw new Error('Failed to fetch product catalog');
+        
+        productsState = await response.json();
+        renderProductCards(productsState);
     } catch (err) {
-        console.error("MongoDB API error:", err);
-        const grid = document.getElementById("product-grid");
-        if (grid) grid.innerHTML = `<p style="grid-column: 1/-1; color: red;">Error connecting to database.</p>`;
+        console.error('Catalog Error:', err);
+        grid.innerHTML = `<p class="error-msg">Failed to load products from database.</p>`;
     }
 }
 
-// Render Main Catalog (Card Clicking directs to product.html?id)
-function renderProducts() {
-    const productGrid = document.getElementById("product-grid");
-    if (!productGrid) return;
-
-    const searchInput = document.getElementById("search-input");
-    const query = searchInput ? searchInput.value.toLowerCase().trim() : "";
-
-    const filtered = products.filter((p) => {
-        const matchesCategory = currentCategory === "all" || p.category === currentCategory;
-        const matchesSearch = p.name.toLowerCase().includes(query);
-        return matchesCategory && matchesSearch;
-    });
-
-    const productCount = document.getElementById("product-count");
-    if (productCount) {
-        productCount.textContent = `${filtered.length} product${filtered.length === 1 ? "" : "s"}`;
+function getMainImage(product) {
+    if (product.images && product.images["1"]) {
+        return product.images["1"];
     }
+    if (typeof product.image === 'string' && product.image.trim() !== "") {
+        return product.image;
+    }
+    return 'https://via.placeholder.com/400x400?text=No+Image';
+}
 
-    if (filtered.length === 0) {
-        productGrid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 3rem 0;">No products found.</p>`;
+function renderProductCards(products) {
+    const grid = document.getElementById('product-grid');
+    if (!grid) return;
+
+    grid.innerHTML = products.map(product => {
+        const primaryImg = getMainImage(product);
+        
+        return `
+            <div class="product-card">
+                <a href="product.html?id=${product.id}" class="card-media-link">
+                    <img src="${primaryImg}" alt="${product.name}" class="card-img" loading="lazy" />
+                </a>
+                <div class="card-info">
+                    <span class="category-tag">${product.category || 'General'}</span>
+                    <a href="product.html?id=${product.id}" class="card-title-link">
+                        <h3 class="product-title">${product.name}</h3>
+                    </a>
+                    <div class="card-bottom">
+                        <span class="current-price">$${Number(product.priceUSD).toFixed(2)}</span>
+                        <button class="add-to-cart-btn" onclick="addToCart(${product.id}, event)">
+                            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                            </svg>
+                            Add
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+/* ------------------------------------------
+   MULTI-IMAGE DETAIL PAGE (product.html)
+   ------------------------------------------ */
+async function loadProductDetail() {
+    const detailContainer = document.getElementById('product-detail-container');
+    if (!detailContainer) return;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const productId = urlParams.get('id');
+
+    if (!productId) {
+        detailContainer.innerHTML = `<p class="error-msg">Product ID missing in URL.</p>`;
         return;
     }
 
-    // Product Card: Clicking anywhere takes user to product.html?id
-    productGrid.innerHTML = filtered
-        .map(
-            (p) => `
-        <article class="product-card" onclick="goToProductPage(${p.id})">
-            <div class="card-image-wrapper">
-                <span class="tag">${p.tag || "ITEM"}</span>
-                <img src="${p.image}" alt="${p.name}" loading="lazy" />
+    try {
+        const response = await fetch(`/api/products?id=${productId}`);
+        if (!response.ok) throw new Error('Product not found');
+        
+        const product = await response.json();
+        
+        // Extract array of images ordered by keys ("1", "2", "3"...)
+        let imageList = [];
+        if (product.images && typeof product.images === 'object') {
+            const keys = Object.keys(product.images).sort((a, b) => Number(a) - Number(b));
+            imageList = keys.map(k => product.images[k]).filter(url => url && url.trim() !== "");
+        }
+        
+        // Fallback if no images object or empty
+        if (imageList.length === 0) {
+            imageList.push(getMainImage(product));
+        }
+
+        renderProductDetailPage(product, imageList);
+    } catch (err) {
+        console.error('Detail Page Error:', err);
+        detailContainer.innerHTML = `<p class="error-msg">Unable to load product details.</p>`;
+    }
+}
+
+function renderProductDetailPage(product, imageList) {
+    const detailContainer = document.getElementById('product-detail-container');
+    
+    // Main main-image starts with index 0
+    const mainImgSrc = imageList[0];
+    
+    // Build thumbnails only if there are 2 or more images
+    const hasMultipleImages = imageList.length > 1;
+    const thumbnailsHTML = hasMultipleImages ? `
+        <div class="thumbnail-gallery">
+            ${imageList.map((imgUrl, idx) => `
+                <img 
+                    src="${imgUrl}" 
+                    class="thumb-item ${idx === 0 ? 'active' : ''}" 
+                    onclick="switchMainImage('${imgUrl}', this)"
+                    alt="Thumbnail ${idx + 1}"
+                />
+            `).join('')}
+        </div>
+    ` : '';
+
+    detailContainer.innerHTML = `
+        <div class="product-detail-layout">
+            <div class="gallery-column">
+                <div class="main-image-wrapper">
+                    <img id="primary-product-image" src="${mainImgSrc}" alt="${product.name}" />
+                </div>
+                ${thumbnailsHTML}
             </div>
-            <div class="card-info">
-                <h3 class="product-title">${p.name}</h3>
-                <div class="price-container">
-                    <span class="current-price">${formatPrice(p.priceUSD)}</span>
-                    <span class="original-price">${formatPrice(p.originalPriceUSD)}</span>
+            
+            <div class="info-column">
+                <span class="detail-category">${product.category || 'General'}</span>
+                <h1 class="p-title">${product.name}</h1>
+                <p class="p-price">$${Number(product.priceUSD).toFixed(2)}</p>
+                <p class="p-desc">${product.description || 'No description provided.'}</p>
+                
+                <div class="p-action-buttons">
+                    <button class="btn-primary" onclick="addToCart(${product.id})">Add to Cart</button>
                 </div>
             </div>
-        </article>
-    `
-        )
-        .join("");
-}
-
-function goToProductPage(id) {
-    window.location.href = `product.html?${id}`;
-}
-
-// Product Details Page Logic
-function loadProductDetailsPage() {
-    const mainImg = document.getElementById("main-product-img");
-    if (!mainImg || products.length === 0) return;
-
-    const queryString = window.location.search.replace("?", "");
-    const productId = parseInt(queryString, 10) || products[0].id;
-
-    const product = products.find((p) => p.id === productId) || products[0];
-
-    document.getElementById("breadcrumb-category").textContent = (product.category || "").toUpperCase();
-    document.getElementById("breadcrumb-title").textContent = product.name;
-    mainImg.src = product.image;
-    document.getElementById("product-tag").textContent = product.tag || "ITEM";
-    document.getElementById("p-title").textContent = product.name;
-    document.getElementById("p-brand").textContent = product.brand || "Pacifix";
-    document.getElementById("p-price").textContent = formatPrice(product.priceUSD);
-    document.getElementById("p-orig-price").textContent = formatPrice(product.originalPriceUSD);
-
-    // Thumbnails
-    const thumbContainer = document.getElementById("thumbnail-list");
-    thumbContainer.innerHTML = [product.image, product.image, product.image, product.image]
-        .map(
-            (img, idx) => `
-        <div class="thumb-item ${idx === 0 ? "active" : ""}" onclick="changeMainImage('${img}', this)">
-            <img src="${img}" alt="Thumbnail" />
         </div>
-    `
-        )
-        .join("");
+    `;
+}
 
-    document.getElementById("product-description").textContent = product.description || "";
+function switchMainImage(src, thumbElement) {
+    const mainImg = document.getElementById('primary-product-image');
+    if (mainImg) mainImg.src = src;
 
-    // Specifications
-    const specsTable = document.getElementById("specs-table");
-    if (product.specs) {
-        specsTable.innerHTML = Object.entries(product.specs)
-            .map(
-                ([k, v]) => `
-            <div class="spec-row">
-                <div class="spec-key">${k}</div>
-                <div class="spec-val">${v}</div>
-            </div>
-        `
-            )
-            .join("");
+    document.querySelectorAll('.thumb-item').forEach(el => el.classList.remove('active'));
+    if (thumbElement) thumbElement.classList.add('active');
+}
+
+/* ------------------------------------------
+   CART SYSTEM & DRAWER MANAGEMENT
+   ------------------------------------------ */
+function addToCart(productId, event) {
+    if (event) event.stopPropagation();
+
+    // If item exists in current state, fetch details
+    let product = productsState.find(p => p.id == productId);
+    
+    if (!product) {
+        // Fallback fetch if added directly from product details page
+        fetch(`/api/products?id=${productId}`)
+            .then(res => res.json())
+            .then(data => executeAddToCart(data))
+            .catch(err => console.error(err));
+    } else {
+        executeAddToCart(product);
+    }
+}
+
+function executeAddToCart(product) {
+    const existing = cart.find(item => item.id == product.id);
+    if (existing) {
+        existing.quantity += 1;
+    } else {
+        cart.push({
+            id: product.id,
+            name: product.name,
+            priceUSD: product.priceUSD,
+            image: getMainImage(product),
+            quantity: 1
+        });
     }
 
-    // Attach functionality to product page Add to Cart and Buy Now buttons
-    const pAddBtn = document.getElementById("p-add-cart-btn");
-    const pBuyBtn = document.getElementById("p-buy-now-btn");
-
-    pAddBtn.onclick = () => addToCart(product.id);
-    pBuyBtn.onclick = () => {
-        addToCart(product.id);
-        alert(`Directing to payment for: ${product.name}`);
-    };
+    saveCart();
+    openCartDrawer();
 }
 
-function changeMainImage(src, element) {
-    document.getElementById("main-product-img").src = src;
-    document.querySelectorAll(".thumb-item").forEach((el) => el.classList.remove("active"));
-    element.classList.add("active");
+function updateCartBadge() {
+    const badge = document.getElementById('cart-count');
+    if (!badge) return;
+    const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+    badge.textContent = totalItems;
 }
 
-// Cart Management
-function updateCartUI() {
-    const badge = document.getElementById("cart-badge");
-    if (badge) badge.textContent = cart.length;
+function saveCart() {
+    localStorage.setItem('pacifix_cart', JSON.stringify(cart));
+    updateCartBadge();
+    renderCartItems();
+}
+
+function setupCartDrawerEvents() {
+    const cartIcon = document.getElementById('cart-icon-btn');
+    const closeBtn = document.getElementById('close-drawer-btn');
+    const overlay = document.getElementById('drawer-overlay');
+
+    if (cartIcon) cartIcon.addEventListener('click', openCartDrawer);
+    if (closeBtn) closeBtn.addEventListener('click', closeCartDrawer);
+    if (overlay) overlay.addEventListener('click', closeCartDrawer);
+}
+
+function openCartDrawer() {
+    renderCartItems();
+    document.getElementById('cart-drawer')?.classList.add('open');
+    document.getElementById('drawer-overlay')?.classList.add('open');
+}
+
+function closeCartDrawer() {
+    document.getElementById('cart-drawer')?.classList.remove('open');
+    document.getElementById('drawer-overlay')?.classList.remove('open');
+}
+
+function renderCartItems() {
+    const cartContainer = document.getElementById('cart-items-container');
+    const totalContainer = document.getElementById('cart-total-price');
+    if (!cartContainer) return;
 
     if (cart.length === 0) {
-        if (emptyCartView) emptyCartView.style.display = "flex";
-        if (cartContentWrapper) cartContentWrapper.style.display = "none";
-    } else {
-        if (emptyCartView) emptyCartView.style.display = "none";
-        if (cartContentWrapper) cartContentWrapper.style.display = "flex";
+        cartContainer.innerHTML = `<p class="empty-cart">Your cart is empty.</p>`;
+        if (totalContainer) totalContainer.textContent = '$0.00';
+        return;
+    }
 
-        if (cartItemsContainer) {
-            cartItemsContainer.innerHTML = cart
-                .map(
-                    (item) => `
-                <div class="cart-item">
-                    <img src="${item.image}" alt="${item.name}" class="cart-item-img" />
-                    <div class="cart-item-details">
-                        <div class="cart-item-title">${item.name}</div>
-                        <div class="cart-item-price">${formatPrice(item.priceUSD)}</div>
-                    </div>
+    let grandTotal = 0;
+    cartContainer.innerHTML = cart.map(item => {
+        const itemTotal = item.priceUSD * item.quantity;
+        grandTotal += itemTotal;
+        return `
+            <div class="cart-item">
+                <img src="${item.image}" alt="${item.name}" />
+                <div class="cart-item-info">
+                    <h4>${item.name}</h4>
+                    <p>$${item.priceUSD.toFixed(2)} x ${item.quantity}</p>
                 </div>
-            `
-                )
-                .join("");
-        }
-    }
+                <button class="remove-btn" onclick="removeFromCart(${item.id})">&times;</button>
+            </div>
+        `;
+    }).join('');
+
+    if (totalContainer) totalContainer.textContent = `$${grandTotal.toFixed(2)}`;
 }
 
-function addToCart(productId) {
-    const exists = cart.some((item) => item.id === productId);
-    if (!exists) {
-        const itemToAdd = products.find((p) => p.id === productId);
-        if (itemToAdd) {
-            cart.push(itemToAdd);
-            saveState();
-        }
-    }
-    updateCartUI();
-    openCart();
+function removeFromCart(productId) {
+    cart = cart.filter(item => item.id != productId);
+    saveCart();
 }
-
-// UI Handlers
-currencyToggle.addEventListener("click", () => {
-    currentCurrency = currentCurrency === "USD" ? "EUR" : "USD";
-    if (currencyLabel) currencyLabel.textContent = currentCurrency;
-    saveState();
-    renderProducts();
-    loadProductDetailsPage();
-    updateCartUI();
-});
-
-document.querySelectorAll(".category-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-        document.querySelectorAll(".category-btn").forEach((b) => b.classList.remove("active"));
-        btn.classList.add("active");
-        currentCategory = btn.dataset.category;
-        renderProducts();
-    });
-});
-
-const searchInput = document.getElementById("search-input");
-if (searchInput) searchInput.addEventListener("input", renderProducts);
-
-function openCart() {
-    cartDrawer.classList.add("active");
-    overlay.classList.add("active");
-    document.body.style.overflow = "hidden";
-}
-
-function closeCart() {
-    cartDrawer.classList.remove("active");
-    overlay.classList.remove("active");
-    document.body.style.overflow = "";
-}
-
-cartBtn.addEventListener("click", openCart);
-closeCartBtn.addEventListener("click", closeCart);
-overlay.addEventListener("click", closeCart);
-continueShoppingBtn.addEventListener("click", closeCart);
-
-buyNowBtn.addEventListener("click", () => {
-    alert("Proceeding to checkout with " + cart.length + " item(s)!");
-});
-
-themeToggle.addEventListener("click", () => {
-    const currentTheme = document.documentElement.getAttribute("data-theme");
-    const newTheme = currentTheme === "dark" ? "light" : "dark";
-    document.documentElement.setAttribute("data-theme", newTheme);
-    themeToggle.querySelector("i").setAttribute("data-lucide", newTheme === "dark" ? "moon" : "sun");
-    if (window.lucide) lucide.createIcons();
-});
-
-// Initialization
-if (currencyLabel) currencyLabel.textContent = currentCurrency;
-fetchProductsFromMongoDB();
-updateCartUI();
