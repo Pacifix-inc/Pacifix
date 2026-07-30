@@ -1,1 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Product Details - PACIFIX</title>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
 
+    <!-- Header / Navbar -->
+    <header class="navbar">
+        <a href="index.html" class="logo-container">
+            <img src="logo.png" alt="PACIFIX Logo" class="brand-logo" onerror="this.style.display='none'" />
+            <span class="logo-text">PACIFIX</span>
+        </a>
+
+        <div class="search-container">
+            <i data-lucide="search" class="search-icon"></i>
+            <input type="text" id="search-input" placeholder="Search Pacifix..." />
+        </div>
+
+        <div class="nav-actions">
+            <button class="pill-btn currency-btn" id="currency-toggle">
+                <span id="currency-label">USD</span> <i data-lucide="chevron-down"></i>
+            </button>
+            <button class="icon-btn" id="theme-toggle" aria-label="Toggle Theme">
+                <i data-lucide="sun"></i>
+            </button>
+            <button class="icon-btn" id="cart-btn" aria-label="Open Cart">
+                <i data-lucide="shopping-cart"></i>
+                <span class="cart-badge" id="cart-badge">0</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="container" id="product-detail-container">
+        <nav class="breadcrumb">
+            <a href="index.html">Home</a> &gt; 
+            <span id="breadcrumb-category">Loading...</span> &gt; 
+            <span id="breadcrumb-title">...</span>
+        </nav>
+
+        <div class="product-detail-layout">
+            <div class="product-gallery">
+                <div class="main-image-box">
+                    <img id="main-product-img" src="" alt="Product Image" />
+                </div>
+                <div class="thumbnail-list" id="thumbnail-list"></div>
+            </div>
+
+            <div class="product-main-info">
+                <span class="tag" id="product-tag">TAG</span>
+                <h1 class="p-title" id="p-title">Loading Product...</h1>
+                <p class="brand-text">Brand: <strong id="p-brand">...</strong></p>
+
+                <div class="rating-row">
+                    <div class="stars">★★★★★</div>
+                    <span class="rating-val">5</span>
+                    <span class="reviews-count">(178 reviews)</span>
+                </div>
+
+                <div class="price-box">
+                    <span class="p-price" id="p-price">$0.00</span>
+                    <span class="p-orig-price" id="p-orig-price">$0.00</span>
+                    <span class="p-discount">22% off</span>
+                </div>
+                <div class="tax-text">Inclusive of all taxes</div>
+
+                <div class="key-features-card">
+                    <h3>Key Features</h3>
+                    <ul id="key-features-list">
+                        <li>Seamless wireless connectivity</li>
+                        <li>High performance build</li>
+                        <li>Durable, everyday-use design</li>
+                    </ul>
+                </div>
+
+                <div class="stock-warning">Only 4 left in stock</div>
+
+                <!-- Action Buttons: Add to Cart & Buy Now together -->
+                <div class="p-action-buttons">
+                    <button class="add-to-cart-btn-main" id="p-add-cart-btn">Add to Cart</button>
+                    <button class="buy-now-btn-main" id="p-buy-now-btn">Buy Now</button>
+                </div>
+
+                <div class="delivery-card">
+                    <div class="del-item"><i data-lucide="truck"></i> Estimated delivery by <strong>Thu, 30 Jul</strong> · <span class="green-text">Free delivery</span></div>
+                    <div class="del-item"><i data-lucide="wallet"></i> Cash on Delivery available</div>
+                    <div class="del-item"><i data-lucide="rotate-ccw"></i> 7-day easy returns</div>
+                </div>
+            </div>
+        </div>
+
+        <section class="product-section">
+            <h2>Description</h2>
+            <p id="product-description" class="desc-p">Loading description...</p>
+        </section>
+
+        <section class="product-section">
+            <h2>Specifications</h2>
+            <div class="specs-table" id="specs-table"></div>
+        </section>
+    </main>
+
+    <div class="overlay" id="overlay"></div>
+
+    <aside class="cart-drawer" id="cart-drawer">
+        <div class="cart-header">
+            <h2>Your Cart</h2>
+            <button class="icon-btn close-cart" id="close-cart"><i data-lucide="x"></i></button>
+        </div>
+
+        <div class="cart-body" id="cart-body">
+            <div class="empty-cart" id="empty-cart">
+                <div class="cart-icon-wrapper"><i data-lucide="shopping-cart"></i></div>
+                <p class="empty-title">Your cart is empty</p>
+                <button class="primary-btn" id="continue-shopping">Continue Shopping</button>
+            </div>
+
+            <div class="cart-content-wrapper" id="cart-content-wrapper" style="display: none;">
+                <div class="cart-items" id="cart-items"></div>
+                <div class="cart-footer">
+                    <button class="buy-now-btn" id="buy-now-btn">Checkout</button>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <script src="js/script.js"></script>
+</body>
+</html>
