@@ -1,90 +1,97 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Pacifix</title>
-        <!-- Lucide Icons for UI symbols -->
-        <script src="https://unpkg.com/lucide@latest"></script>
-        <link rel="stylesheet" href="CSS/style.css" />
-    </head>
-    <body>
-    
-        <!-- Navbar -->
-        <header class="navbar">
-            <div class="logo">PACIFIX</div>
-    
-            <div class="search-container">
-                <i data-lucide="search" class="search-icon"></i>
-                <input type="text" id="search-input" placeholder="Search Pacifix..." />
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PACIFIX - Shop the Collection</title>
+    <!-- Lucide Icons for UI symbols -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+    <!-- Navbar -->
+    <header class="navbar">
+        <div class="logo">PACIFIX</div>
+
+        <div class="search-container">
+            <i data-lucide="search" class="search-icon"></i>
+            <input type="text" id="search-input" placeholder="Search Pacifix..." />
+        </div>
+
+        <div class="nav-actions">
+            <button class="pill-btn currency-btn" id="currency-toggle">
+                <span id="currency-label">USD</span> <i data-lucide="chevron-down"></i>
+            </button>
+            <button class="icon-btn" id="theme-toggle" aria-label="Toggle Theme">
+                <i data-lucide="sun"></i>
+            </button>
+            <button class="icon-btn" id="cart-btn" aria-label="Open Cart">
+                <i data-lucide="shopping-cart"></i>
+                <span class="cart-badge" id="cart-badge">0</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container">
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">Shop the collection</h1>
+                <p class="page-subtitle">Fresh picks across tech and cool gadgets.</p>
             </div>
-    
-            <div class="nav-actions">
-                <button class="pill-btn currency-btn">
-                    INR <i data-lucide="chevron-down"></i>
-                </button>
-                <button class="icon-btn" id="theme-toggle" aria-label="Toggle Theme">
-                    <i data-lucide="sun"></i>
-                </button>
-                <button class="icon-btn" id="cart-btn" aria-label="Open Cart">
+            <div class="product-count" id="product-count">4 products</div>
+        </div>
+
+        <div class="content-layout">
+            <!-- Sidebar Categories -->
+            <aside class="sidebar">
+                <button class="category-btn active" data-category="all">All</button>
+                <button class="category-btn" data-category="tech">Tech</button>
+                <button class="category-btn" data-category="gadgets">Cool Gadgets</button>
+            </aside>
+
+            <!-- Products Grid -->
+            <section class="product-grid" id="product-grid">
+                <!-- Injected via JavaScript -->
+            </section>
+        </div>
+    </main>
+
+    <!-- Overlay -->
+    <div class="overlay" id="overlay"></div>
+
+    <!-- Cart Drawer Sidebar -->
+    <aside class="cart-drawer" id="cart-drawer">
+        <div class="cart-header">
+            <h2>Your Cart</h2>
+            <button class="icon-btn close-cart" id="close-cart" aria-label="Close Cart">
+                <i data-lucide="x"></i>
+            </button>
+        </div>
+
+        <div class="cart-body" id="cart-body">
+            <!-- Empty State -->
+            <div class="empty-cart" id="empty-cart">
+                <div class="cart-icon-wrapper">
                     <i data-lucide="shopping-cart"></i>
-                    <span class="cart-badge" id="cart-badge">0</span>
-                </button>
-            </div>
-        </header>
-    
-        <!-- Main Content -->
-        <main class="container">
-            <div class="page-header">
-                <div>
-                    <h1 class="page-title">Shop the collection</h1>
-                    <p class="page-subtitle">Fresh picks across tech and cool gadgets.</p>
                 </div>
-                <div class="product-count" id="product-count">4 products</div>
+                <p class="empty-title">Your cart is empty</p>
+                <button class="primary-btn" id="continue-shopping">Continue Shopping</button>
             </div>
-    
-            <div class="content-layout">
-                <!-- Sidebar Categories -->
-                <aside class="sidebar">
-                    <button class="category-btn active" data-category="all">All</button>
-                    <button class="category-btn" data-category="tech">Tech</button>
-                    <button class="category-btn" data-category="gadgets">Cool Gadgets</button>
-                </aside>
-    
-                <!-- Products Grid -->
-                <section class="product-grid" id="product-grid">
-                    <!-- Injected via JavaScript -->
-                </section>
-            </div>
-        </main>
-    
-        <!-- Overlay -->
-        <div class="overlay" id="overlay"></div>
-    
-        <!-- Cart Drawer Sidebar -->
-        <aside class="cart-drawer" id="cart-drawer">
-            <div class="cart-header">
-                <h2>Your Cart</h2>
-                <button class="icon-btn close-cart" id="close-cart" aria-label="Close Cart">
-                    <i data-lucide="x"></i>
-                </button>
-            </div>
-    
-            <div class="cart-body" id="cart-body">
-                <!-- Empty State -->
-                <div class="empty-cart" id="empty-cart">
-                    <div class="cart-icon-wrapper">
-                        <i data-lucide="shopping-cart"></i>
-                    </div>
-                    <p class="empty-title">Your cart is empty</p>
-                    <button class="primary-btn" id="continue-shopping">Continue Shopping</button>
+
+            <!-- Cart Items Container -->
+            <div class="cart-content-wrapper" id="cart-content-wrapper" style="display: none;">
+                <div class="cart-items" id="cart-items">
+                    <!-- Cart items render here -->
                 </div>
-    
-                <!-- Cart Items List -->
-                <div class="cart-items" id="cart-items" style="display: none;"></div>
+                <div class="cart-footer">
+                    <button class="buy-now-btn" id="buy-now-btn">Buy Now</button>
+                </div>
             </div>
-        </aside>
-    
-        <script src="JS/script.js"></script>
-    </body>
+        </div>
+    </aside>
+
+    <script src="script.js"></script>
+</body>
 </html>
