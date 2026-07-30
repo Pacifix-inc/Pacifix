@@ -136,10 +136,159 @@ body { font-family: var(--font-family); background-color: var(--bg-color); color
 .cart-item-price { font-size: 0.85rem; color: var(--text-muted); font-weight: 700; }
 .cart-footer { padding-top: 1.5rem; border-top: 1px solid var(--border-color); }
 
-@media (max-width: 900px) {
-    .content-layout, .product-detail-layout { grid-template-columns: 1fr; }
-    .sidebar { flex-direction: row; overflow-x: auto; }
-    .navbar { padding: 1rem; }
-    .container { padding: 1.5rem 1rem; }
-    .search-container { width: 50%; }
+/* ==========================================
+   RESPONSIVE & MEDIA QUERIES (METRIC BREAKPOINTS)
+   ========================================== */
+
+/* 1. Large Screens & Laptops (Max Width: 1200px) */
+@media screen and (max-width: 1200px) {
+    .container {
+        padding: 2rem 2rem 3rem;
+    }
+
+    .content-layout {
+        grid-template-columns: 180px 1fr;
+        gap: 1.5rem;
+    }
+
+    .product-detail-layout {
+        gap: 2rem;
+    }
+}
+
+/* 2. Tablets & Small Laptops (Max Width: 900px) */
+@media screen and (max-width: 900px) {
+    .navbar {
+        padding: 1rem 1.5rem;
+    }
+
+    .search-container {
+        width: 45%;
+    }
+
+    /* Stack product catalog layout vertically */
+    .content-layout {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+
+    /* Horizontal scrolling category chips on tablet/mobile */
+    .sidebar {
+        flex-direction: row;
+        overflow-x: auto;
+        padding-bottom: 0.5rem;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .category-btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.85rem;
+        flex-shrink: 0;
+    }
+
+    /* Stack product page gallery and details */
+    .product-detail-layout {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+
+    .p-title {
+        font-size: 1.6rem;
+    }
+
+    .p-price {
+        font-size: 1.5rem;
+    }
+}
+
+/* 3. Mobile Devices (Max Width: 600px) */
+@media screen and (max-width: 600px) {
+    .navbar {
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        padding: 0.85rem 1rem;
+    }
+
+    .logo-container {
+        order: 1;
+    }
+
+    .nav-actions {
+        order: 2;
+    }
+
+    /* Make search bar full-width on mobile */
+    .search-container {
+        order: 3;
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .container {
+        padding: 1.25rem 1rem 3rem;
+    }
+
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .page-title {
+        font-size: 1.75rem;
+    }
+
+    /* 2 columns on mobile for product cards */
+    .product-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+    }
+
+    .card-info {
+        padding: 0.75rem;
+    }
+
+    .product-title {
+        font-size: 0.875rem;
+        margin-bottom: 0.4rem;
+    }
+
+    .current-price {
+        font-size: 0.95rem;
+    }
+
+    /* Stack Add to Cart / Buy Now stacked vertically on small screens */
+    .p-action-buttons {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+
+    .thumb-item {
+        width: 65px;
+        height: 65px;
+    }
+
+    .spec-row {
+        flex-direction: column;
+        gap: 0.25rem;
+        padding: 0.75rem 1rem;
+    }
+
+    .spec-key, .spec-val {
+        width: 100%;
+    }
+
+    /* Cart Drawer full screen on mobile */
+    .cart-drawer {
+        max-width: 100%;
+    }
+}
+
+/* 4. Ultra-Small Screens (Max Width: 380px) */
+@media screen and (max-width: 380px) {
+    .product-grid {
+        grid-template-columns: 1fr; /* 1 card per row on tiny devices */
+    }
 }
