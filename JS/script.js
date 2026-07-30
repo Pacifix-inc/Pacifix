@@ -1,11 +1,11 @@
-// Sample products database matching the screenshot layout
+// Base Prices set in USD
 const products = [
     {
         id: 1,
         name: "Wireless Bluetooth Earbuds",
         category: "tech",
-        price: 1499,
-        originalPrice: 1930,
+        priceUSD: 19.99,
+        originalPriceUSD: 24.99,
         tag: "TECH",
         image: "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=500&auto=format&fit=crop&q=80"
     },
@@ -13,8 +13,8 @@ const products = [
         id: 2,
         name: "Active Noise-Cancelling Headphones",
         category: "tech",
-        price: 2999,
-        originalPrice: 4110,
+        priceUSD: 39.99,
+        originalPriceUSD: 54.99,
         tag: "TECH",
         image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&auto=format&fit=crop&q=80"
     },
@@ -22,8 +22,8 @@ const products = [
         id: 3,
         name: "Bluetooth Neckband Earphones",
         category: "tech",
-        price: 2080,
-        originalPrice: 2790,
+        priceUSD: 27.99,
+        originalPriceUSD: 36.99,
         tag: "TECH",
         image: "https://images.unsplash.com/photo-1572536147248-ac59a8abfa4b?w=500&auto=format&fit=crop&q=80"
     },
@@ -31,15 +31,22 @@ const products = [
         id: 4,
         name: "Portable Bluetooth Speaker",
         category: "gadgets",
-        price: 1299,
-        originalPrice: 1720,
+        priceUSD: 16.99,
+        originalPriceUSD: 22.99,
         tag: "TECH",
         image: "https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=500&auto=format&fit=crop&q=80"
     }
 ];
 
-let cart = [];
+// State Variables
+let cart = []; // Array of unique product objects
 let currentCategory = "all";
+let currentCurrency = "USD"; // Toggle between 'USD' and 'EUR'
+
+const currencyRates = {
+    USD: { symbol: "$", rate: 1.0 },
+    EUR: { symbol: "€", rate: 0.92 }
+};
 
 // DOM Elements
 const productGrid = document.getElementById("product-grid");
@@ -47,17 +54,30 @@ const productCount = document.getElementById("product-count");
 const categoryBtns = document.querySelectorAll(".category-btn");
 const searchInput = document.getElementById("search-input");
 const themeToggle = document.getElementById("theme-toggle");
+const currencyToggle = document.getElementById("currency-toggle");
+const currencyLabel = document.getElementById("currency-label");
 
 const cartBtn = document.getElementById("cart-btn");
 const closeCartBtn = document.getElementById("close-cart");
 const cartDrawer = document.getElementById("cart-drawer");
 const overlay = document.getElementById("overlay");
 const continueShoppingBtn = document.getElementById("continue-shopping");
+const emptyCartView = document.getElementById("empty-cart");
+const cartContentWrapper = document.getElementById("cart-content-wrapper");
+const cartItemsContainer = document.getElementById("cart-items");
+const buyNowBtn = document.getElementById("buy-now-btn");
 
-// Initialize Lucide Icons
+// Initialize Icons
 lucide.createIcons();
 
-// Render Products
+// Helper to Format Prices according to Currency
+function formatPrice(amountInUSD) {
+    const { symbol, rate } = currencyRates[currentCurrency];
+    const converted = (amountInUSD * rate).toFixed(2);
+    return `${symbol}${converted}`;
+}
+
+// Render Main Products
 function renderProducts() {
     const query = searchInput.value.toLowerCase().trim();
 
@@ -88,8 +108,8 @@ function renderProducts() {
             <div class="card-info">
                 <h3 class="product-title">${p.name}</h3>
                 <div class="price-container">
-                    <span class="current-price">₹${p.price.toLocaleString("en-IN")}</span>
-                    <span class="original-price">₹${p.originalPrice.toLocaleString("en-IN")}</span>
+                    <span class="current-price">${formatPrice(p.priceUSD)}</span>
+                    <span class="original-price">${formatPrice(p.originalPriceUSD)}</span>
                 </div>
             </div>
         </article>
@@ -97,6 +117,58 @@ function renderProducts() {
         )
         .join("");
 }
+
+// Update Cart Display & Side Drawer
+function updateCartUI() {
+    // Number represents types of unique items added
+    document.getElementById("cart-badge").textContent = cart.length;
+
+    if (cart.length === 0) {
+        emptyCartView.style.display = "flex";
+        cartContentWrapper.style.display = "none";
+    } else {
+        emptyCartView.style.display = "none";
+        cartContentWrapper.style.display = "flex";
+
+        cartItemsContainer.innerHTML = cart
+            .map(
+                (item) => `
+            <div class="cart-item">
+                <img src="${item.image}" alt="${item.name}" class="cart-item-img" />
+                <div class="cart-item-details">
+                    <div class="cart-item-title">${item.name}</div>
+                    <div class="cart-item-price">${formatPrice(item.priceUSD)}</div>
+                </div>
+            </div>
+        `
+            )
+            .join("");
+    }
+}
+
+// Add Item To Cart (Unique types only)
+function addToCart(productId) {
+    const exists = cart.some((item) => item.id === productId);
+
+    // If item is already added, badge/counter does NOT increase
+    if (!exists) {
+        const itemToAdd = products.find((p) => p.id === productId);
+        if (itemToAdd) {
+            cart.push(itemToAdd);
+        }
+    }
+
+    updateCartUI();
+    openCart();
+}
+
+// Toggle Currency between USD and EUR
+currencyToggle.addEventListener("click", () => {
+    currentCurrency = currentCurrency === "USD" ? "EUR" : "USD";
+    currencyLabel.textContent = currentCurrency;
+    renderProducts();
+    updateCartUI();
+});
 
 // Category Filter Event
 categoryBtns.forEach((btn) => {
@@ -108,10 +180,10 @@ categoryBtns.forEach((btn) => {
     });
 });
 
-// Search Input Listener
+// Search Filter
 searchInput.addEventListener("input", renderProducts);
 
-// Cart Drawer Toggles
+// Drawer Toggles
 function openCart() {
     cartDrawer.classList.add("active");
     overlay.classList.add("active");
@@ -129,15 +201,10 @@ closeCartBtn.addEventListener("click", closeCart);
 overlay.addEventListener("click", closeCart);
 continueShoppingBtn.addEventListener("click", closeCart);
 
-// Add to Cart Logic
-function addToCart(productId) {
-    const item = products.find((p) => p.id === productId);
-    if (item) {
-        cart.push(item);
-        document.getElementById("cart-badge").textContent = cart.length;
-        openCart();
-    }
-}
+// Buy Now Action
+buyNowBtn.addEventListener("click", () => {
+    alert("Proceeding to checkout with " + cart.length + " type(s) of item(s)!");
+});
 
 // Dark Mode Toggle
 themeToggle.addEventListener("click", () => {
@@ -149,5 +216,5 @@ themeToggle.addEventListener("click", () => {
     lucide.createIcons();
 });
 
-// Initial Render
+// Initial Setup
 renderProducts();
