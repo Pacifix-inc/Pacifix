@@ -3,20 +3,22 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>PACIFIX - Shop the Collection</title>
-    <!-- Lucide Icons for UI symbols -->
+    <title>PACIFIX - Store</title>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <link rel="stylesheet" href="CSS/style.css" />
+    <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
 
-    <!-- Navbar -->
+    <!-- Header / Navbar -->
     <header class="navbar">
-        <div class="logo">Pacifix</div>
+        <a href="index.html" class="logo-container">
+            <img src="logo.png" alt="PACIFIX Logo" class="brand-logo" onerror="this.style.display='none'" />
+            <span class="logo-text">PACIFIX</span>
+        </a>
 
         <div class="search-container">
             <i data-lucide="search" class="search-icon"></i>
-            <input type="text" id="search-input" placeholder="Search Products..." />
+            <input type="text" id="search-input" placeholder="Search Pacifix..." />
         </div>
 
         <div class="nav-actions">
@@ -38,9 +40,9 @@
         <div class="page-header">
             <div>
                 <h1 class="page-title">Shop the collection</h1>
-                <p class="page-subtitle">Fresh picks across tech and cool gadgets.</p>
+                <p class="page-subtitle">Fresh picks fetched direct from database.</p>
             </div>
-            <div class="product-count" id="product-count">4 products</div>
+            <div class="product-count" id="product-count">Loading...</div>
         </div>
 
         <div class="content-layout">
@@ -51,47 +53,38 @@
                 <button class="category-btn" data-category="gadgets">Cool Gadgets</button>
             </aside>
 
-            <!-- Products Grid -->
+            <!-- Products Grid (No direct Add to Cart buttons on cards) -->
             <section class="product-grid" id="product-grid">
-                <!-- Injected via JavaScript -->
+                <p class="loading-state">Fetching products from database...</p>
             </section>
         </div>
     </main>
 
-    <!-- Overlay -->
     <div class="overlay" id="overlay"></div>
 
-    <!-- Cart Drawer Sidebar -->
+    <!-- Cart Drawer -->
     <aside class="cart-drawer" id="cart-drawer">
         <div class="cart-header">
             <h2>Your Cart</h2>
-            <button class="icon-btn close-cart" id="close-cart" aria-label="Close Cart">
-                <i data-lucide="x"></i>
-            </button>
+            <button class="icon-btn close-cart" id="close-cart"><i data-lucide="x"></i></button>
         </div>
 
         <div class="cart-body" id="cart-body">
-            <!-- Empty State -->
             <div class="empty-cart" id="empty-cart">
-                <div class="cart-icon-wrapper">
-                    <i data-lucide="shopping-cart"></i>
-                </div>
+                <div class="cart-icon-wrapper"><i data-lucide="shopping-cart"></i></div>
                 <p class="empty-title">Your cart is empty</p>
                 <button class="primary-btn" id="continue-shopping">Continue Shopping</button>
             </div>
 
-            <!-- Cart Items Container -->
             <div class="cart-content-wrapper" id="cart-content-wrapper" style="display: none;">
-                <div class="cart-items" id="cart-items">
-                    <!-- Cart items render here -->
-                </div>
+                <div class="cart-items" id="cart-items"></div>
                 <div class="cart-footer">
-                    <button class="buy-now-btn" id="buy-now-btn">Buy Now</button>
+                    <button class="buy-now-btn" id="buy-now-btn">Checkout</button>
                 </div>
             </div>
         </div>
     </aside>
 
-    <script src="JS/script.js"></script>
+    <script src="js/script.js"></script>
 </body>
 </html>
