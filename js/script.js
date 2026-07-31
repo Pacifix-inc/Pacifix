@@ -462,7 +462,7 @@ function setupEventListeners() {
                 alert("Your cart is empty!");
                 return;
             }
-            alert(`Proceeding to checkout with ${cart.length} item type(s)!`);
+            alert(`Under Maintainence!`);
         });
     }
 }
