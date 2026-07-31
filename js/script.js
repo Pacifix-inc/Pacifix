@@ -132,7 +132,7 @@ function renderProductCards() {
                             ${originalPriceHTML}
                         </div>
                         <button class="add-to-cart-btn" onclick="addToCart(${product.id}, event)">
-                            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                             </svg>
                             Add
@@ -152,7 +152,6 @@ async function loadProductDetail() {
     const urlParams = new URLSearchParams(window.location.search);
     let productId = urlParams.get("id");
 
-    // Fallback URL query parsing if formatted like ?1
     if (!productId && window.location.search) {
         const rawId = window.location.search.replace("?", "");
         productId = parseInt(rawId, 10);
@@ -169,7 +168,6 @@ async function loadProductDetail() {
 
         const product = await response.json();
 
-        // Extract ordered images
         let imageList = [];
         if (product.images && typeof product.images === "object") {
             const keys = Object.keys(product.images).sort((a, b) => Number(a) - Number(b));
@@ -211,7 +209,7 @@ function renderProductDetailPage(product, imageList) {
     if (product.specs && typeof product.specs === "object") {
         specsHTML = `
             <div class="specs-container" style="margin-top: 1.5rem;">
-                <h4>Specifications</h4>
+                <h4 style="margin-bottom: 0.5rem;">Specifications</h4>
                 <div class="specs-table" id="specs-table">
                     ${Object.entries(product.specs).map(([k, v]) => `
                         <div class="spec-row">
@@ -236,10 +234,10 @@ function renderProductDetailPage(product, imageList) {
             <div class="info-column">
                 <span class="detail-category">${(product.category || "General").toUpperCase()}</span>
                 <h1 class="p-title" id="p-title">${product.name}</h1>
-                <p class="p-brand" id="p-brand" style="opacity:0.7;">By ${product.brand || "Pacifix"}</p>
+                <p class="p-brand" id="p-brand" style="opacity:0.7; margin-top: 0.25rem;">By ${product.brand || "Pacifix"}</p>
                 
                 <div class="price-container" style="margin: 1rem 0;">
-                    <span class="p-price" id="p-price" style="font-size: 1.5rem; font-weight: bold;">${formatPrice(product.priceUSD)}</span>
+                    <span class="p-price" id="p-price" style="font-size: 1.75rem; font-weight: bold;">${formatPrice(product.priceUSD)}</span>
                     ${product.originalPriceUSD ? `<span class="p-orig-price" style="text-decoration: line-through; opacity: 0.6; margin-left: 0.5rem;">${formatPrice(product.originalPriceUSD)}</span>` : ""}
                 </div>
 
@@ -247,9 +245,16 @@ function renderProductDetailPage(product, imageList) {
                 
                 ${specsHTML}
 
-                <div class="p-action-buttons" style="display: flex; gap: 1rem; margin-top: 1.5rem;">
-                    <button class="btn-primary" id="p-add-cart-btn" onclick="addToCart(${product.id})">Add to Cart</button>
-                    <button class="btn-secondary" id="p-buy-now-btn" onclick="buyNowSingle(${product.id})">Buy Now</button>
+                <div class="p-action-buttons">
+                    <button class="btn-action btn-add-cart" id="p-add-cart-btn" onclick="addToCart(${product.id}, event)">
+                        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+                        </svg>
+                        Add to Cart
+                    </button>
+                    <button class="btn-action btn-buy-now" id="p-buy-now-btn" onclick="buyNowSingle(${product.id})">
+                        Buy Now
+                    </button>
                 </div>
             </div>
         </div>
@@ -265,7 +270,7 @@ function switchMainImage(src, thumbElement) {
 }
 
 /* ------------------------------------------
-   CART SYSTEM & DRAWER MANAGEMENT
+   CART SYSTEM & QUANTITY CONTROLS
    ------------------------------------------ */
 function addToCart(productId, event) {
     if (event) event.stopPropagation();
@@ -298,19 +303,33 @@ function executeAddToCart(product) {
 
     saveState();
     updateCartBadge();
-    openCartDrawer();
+}
+
+function updateQuantity(productId, delta) {
+    const itemIndex = cart.findIndex((i) => i.id == productId);
+    if (itemIndex > -1) {
+        cart[itemIndex].quantity += delta;
+        if (cart[itemIndex].quantity <= 0) {
+            cart.splice(itemIndex, 1);
+        }
+    }
+    saveState();
+    updateCartBadge();
+    renderCartItems();
 }
 
 function buyNowSingle(productId) {
     addToCart(productId);
-    alert("Directing to payment...");
+    openCartDrawer();
 }
 
 function updateCartBadge() {
     const badge = document.getElementById("cart-count") || document.getElementById("cart-badge");
     if (!badge) return;
-    const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-    badge.textContent = totalItems;
+    
+    // Counts distinct product types instead of total items count
+    const distinctItemTypesCount = cart.length;
+    badge.textContent = distinctItemTypesCount;
 }
 
 function renderCartItems() {
@@ -324,7 +343,7 @@ function renderCartItems() {
     if (cart.length === 0) {
         if (emptyCartView) emptyCartView.style.display = "flex";
         if (cartContentWrapper) cartContentWrapper.style.display = "none";
-        cartContainer.innerHTML = `<p class="empty-cart" style="text-align: center; padding: 2rem;">Your cart is empty.</p>`;
+        cartContainer.innerHTML = `<p class="empty-cart" style="text-align: center; padding: 2rem; color: #888;">Your cart is empty.</p>`;
         if (totalContainer) totalContainer.textContent = formatPrice(0);
         return;
     }
@@ -342,7 +361,12 @@ function renderCartItems() {
                 <img src="${item.image}" alt="${item.name}" class="cart-item-img" />
                 <div class="cart-item-info">
                     <h4 class="cart-item-title">${item.name}</h4>
-                    <p class="cart-item-price">${formatPrice(item.priceUSD)} x ${item.quantity}</p>
+                    <p class="cart-item-price">${formatPrice(item.priceUSD)}</p>
+                    <div class="cart-quantity-controls">
+                        <button class="qty-btn" onclick="updateQuantity(${item.id}, -1)">&minus;</button>
+                        <span class="qty-val">${item.quantity}</span>
+                        <button class="qty-btn" onclick="updateQuantity(${item.id}, 1)">&plus;</button>
+                    </div>
                 </div>
                 <button class="remove-btn" onclick="removeFromCart(${item.id})" aria-label="Remove item">&times;</button>
             </div>
@@ -388,7 +412,6 @@ function closeCartDrawer() {
    GLOBAL EVENT LISTENERS
    ------------------------------------------ */
 function setupEventListeners() {
-    // Currency Toggle
     if (currencyToggle) {
         currencyToggle.addEventListener("click", () => {
             currentCurrency = currentCurrency === "USD" ? "EUR" : "USD";
@@ -397,14 +420,12 @@ function setupEventListeners() {
             renderProductCards();
             renderCartItems();
             
-            // Re-render product detail prices if on detail page
             if (document.getElementById("product-detail-container")) {
                 loadProductDetail();
             }
         });
     }
 
-    // Theme Toggle
     if (themeToggle) {
         themeToggle.addEventListener("click", () => {
             const currentTheme = document.documentElement.getAttribute("data-theme");
@@ -416,7 +437,6 @@ function setupEventListeners() {
         });
     }
 
-    // Category Filtering
     document.querySelectorAll(".category-btn").forEach((btn) => {
         btn.addEventListener("click", () => {
             document.querySelectorAll(".category-btn").forEach((b) => b.classList.remove("active"));
@@ -426,13 +446,11 @@ function setupEventListeners() {
         });
     });
 
-    // Live Search
     const searchInput = document.getElementById("search-input");
     if (searchInput) {
         searchInput.addEventListener("input", renderProductCards);
     }
 
-    // Drawer Listeners
     if (cartBtn) cartBtn.addEventListener("click", openCartDrawer);
     if (closeCartBtn) closeCartBtn.addEventListener("click", closeCartDrawer);
     if (overlay) overlay.addEventListener("click", closeCartDrawer);
@@ -444,7 +462,7 @@ function setupEventListeners() {
                 alert("Your cart is empty!");
                 return;
             }
-            alert(`Proceeding to checkout with ${cart.length} item(s)!`);
+            alert(`Proceeding to checkout with ${cart.length} item type(s)!`);
         });
     }
 }
