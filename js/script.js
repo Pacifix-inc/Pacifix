@@ -457,12 +457,44 @@ function setupEventListeners() {
     if (continueShoppingBtn) continueShoppingBtn.addEventListener("click", closeCartDrawer);
 
     if (buyNowBtn) {
-        buyNowBtn.addEventListener("click", () => {
+        buyNowBtn.addEventListener("click", async () => {
             if (cart.length === 0) {
                 alert("Your cart is empty!");
                 return;
             }
-            alert(`Under Maintainence!`);
+
+            // Disable button temporarily to prevent duplicate clicks
+            buyNowBtn.disabled = true;
+            buyNowBtn.textContent = "Processing...";
+
+            try {
+                const response = await fetch("/api/checkout", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ cart })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    alert("Order placed successfully! Thank you for shopping with Pacifix.");
+                    
+                    // Clear cart & close drawer
+                    cart = [];
+                    saveState();
+                    updateCartBadge();
+                    renderCartItems();
+                    closeCartDrawer();
+                } else {
+                    alert(data.error || "Something went wrong with your order.");
+                }
+            } catch (err) {
+                console.error("Checkout request failed:", err);
+                alert("Unable to process checkout. Please try again.");
+            } finally {
+                buyNowBtn.disabled = false;
+                buyNowBtn.textContent = "Checkout / Buy Now";
+            }
         });
     }
 }
