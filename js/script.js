@@ -1,4 +1,6 @@
-/* PACIFIX - FRONTEND LOGIC & STATE MANAGEMENT */
+/* ==========================================
+   PACIFIX - FRONTEND LOGIC & STATE MANAGEMENT
+   ========================================== */
 
 // State Management
 let productsState = [];
@@ -32,6 +34,15 @@ document.addEventListener("DOMContentLoaded", () => {
     updateCartBadge();
     setupEventListeners();
 
+    // Handle URL search parameter on index page reload/redirect
+    const searchInput = document.getElementById("search-input");
+    const urlParams = new URLSearchParams(window.location.search);
+    const searchQuery = urlParams.get("search");
+
+    if (searchQuery && searchInput) {
+        searchInput.value = decodeURIComponent(searchQuery);
+    }
+
     // Route-based data loading
     if (document.getElementById("product-grid")) {
         loadProductCatalog();
@@ -40,7 +51,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 });
 
-/* UTILITY & FORMATTING HELPERS */
+/* ------------------------------------------
+   UTILITY & FORMATTING HELPERS
+   ------------------------------------------ */
 function formatPrice(amountInUSD) {
     if (amountInUSD === undefined || amountInUSD === null) return "$0.00";
     const { symbol, rate } = currencyRates[currentCurrency] || currencyRates.USD;
@@ -73,7 +86,9 @@ function renderStars(rating) {
     return "★".repeat(fullStars) + (hasHalfStar ? "½" : "") + "☆".repeat(emptyStars);
 }
 
-/* CATALOG FETCH & RENDERING (index.html) */
+/* ------------------------------------------
+   CATALOG FETCH & RENDERING (index.html)
+   ------------------------------------------ */
 async function loadProductCatalog() {
     const grid = document.getElementById("product-grid");
     if (!grid) return;
@@ -160,19 +175,21 @@ function renderProductCards() {
     }).join("");
 }
 
-/* MULTI-IMAGE DETAIL PAGE (product.html) */
+/* ------------------------------------------
+   MULTI-IMAGE DETAIL PAGE (product.html)
+   ------------------------------------------ */
 async function loadProductDetail() {
     const detailContainer = document.getElementById("product-detail-container");
     const urlParams = new URLSearchParams(window.location.search);
     let productId = urlParams.get("id");
 
-    if (!productId && window.location.search) {
+    if (!productId && window.location.search && !urlParams.has("search")) {
         const rawId = window.location.search.replace("?", "");
         productId = parseInt(rawId, 10);
     }
 
     if (!productId) {
-        if (detailContainer) detailContainer.innerHTML = `<p class="error-msg">Product ID missing in URL.</p>`;
+        if (detailContainer) detailContainer.innerHTML = `<p class="error-msg" style="text-align: center; padding: 3rem;">Product ID missing in URL.</p>`;
         return;
     }
 
@@ -195,7 +212,7 @@ async function loadProductDetail() {
         renderProductDetailPage(product, imageList);
     } catch (err) {
         console.error("Detail Page Error:", err);
-        if (detailContainer) detailContainer.innerHTML = `<p class="error-msg">Unable to load product details.</p>`;
+        if (detailContainer) detailContainer.innerHTML = `<p class="error-msg" style="text-align: center; padding: 3rem;">Unable to load product details.</p>`;
     }
 }
 
@@ -310,7 +327,9 @@ function switchMainImage(src, thumbElement) {
     if (thumbElement) thumbElement.classList.add("active");
 }
 
-/* CART SYSTEM & QUANTITY CONTROLS */
+/* ------------------------------------------
+   CART SYSTEM & QUANTITY CONTROLS
+   ------------------------------------------ */
 function addToCart(productId, event) {
     if (event) event.stopPropagation();
 
@@ -366,7 +385,6 @@ function updateCartBadge() {
     const badge = document.getElementById("cart-count") || document.getElementById("cart-badge");
     if (!badge) return;
     
-    // Counts distinct product types instead of total items count
     const distinctItemTypesCount = cart.length;
     badge.textContent = distinctItemTypesCount;
 }
@@ -447,7 +465,9 @@ function closeCartDrawer() {
     document.body.style.overflow = "";
 }
 
-/* GLOBAL EVENT LISTENERS */
+/* ------------------------------------------
+   GLOBAL EVENT LISTENERS
+   ------------------------------------------ */
 function setupEventListeners() {
     if (currencyToggle) {
         currencyToggle.addEventListener("click", () => {
@@ -485,7 +505,24 @@ function setupEventListeners() {
 
     const searchInput = document.getElementById("search-input");
     if (searchInput) {
-        searchInput.addEventListener("input", renderProductCards);
+        // Live search if already on index.html
+        searchInput.addEventListener("input", () => {
+            if (document.getElementById("product-grid")) {
+                renderProductCards();
+            }
+        });
+
+        // Redirect to index.html with search query when Enter is pressed on any page (including product.html)
+        searchInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+                const query = searchInput.value.trim();
+                const isCatalogPage = !!document.getElementById("product-grid");
+                
+                if (!isCatalogPage) {
+                    window.location.href = `index.html?search=${encodeURIComponent(query)}`;
+                }
+            }
+        });
     }
 
     if (cartBtn) cartBtn.addEventListener("click", openCartDrawer);
@@ -500,7 +537,6 @@ function setupEventListeners() {
                 return;
             }
 
-            // Disable button temporarily to prevent duplicate clicks
             buyNowBtn.disabled = true;
             buyNowBtn.textContent = "Processing...";
 
@@ -516,7 +552,6 @@ function setupEventListeners() {
                 if (response.ok && data.success) {
                     alert("Order placed successfully!");
                     
-                    // Clear cart & close drawer
                     cart = [];
                     saveState();
                     updateCartBadge();
