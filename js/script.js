@@ -477,7 +477,7 @@ function setupEventListeners() {
                 const data = await response.json();
 
                 if (response.ok && data.success) {
-                    alert("Order placed successfully! Thank you for shopping with Pacifix.");
+                    alert("Under Maintainence!");
                     
                     // Clear cart & close drawer
                     cart = [];
