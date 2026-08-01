@@ -1,6 +1,4 @@
-/* ==========================================
-   PACIFIX - FRONTEND LOGIC & STATE MANAGEMENT
-   ========================================== */
+/* PACIFIX - FRONTEND LOGIC & STATE MANAGEMENT */
 
 // State Management
 let productsState = [];
@@ -42,9 +40,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 });
 
-/* ------------------------------------------
-   UTILITY & FORMATTING HELPERS
-   ------------------------------------------ */
+/* UTILITY & FORMATTING HELPERS */
 function formatPrice(amountInUSD) {
     if (amountInUSD === undefined || amountInUSD === null) return "$0.00";
     const { symbol, rate } = currencyRates[currentCurrency] || currencyRates.USD;
@@ -67,9 +63,17 @@ function saveState() {
     localStorage.setItem("pacifix_currency", currentCurrency);
 }
 
-/* ------------------------------------------
-   CATALOG FETCH & RENDERING (index.html)
-   ------------------------------------------ */
+// Converts numerical rating (e.g. 4.8) into Star String (e.g. ★★★★½)
+function renderStars(rating) {
+    if (!rating || isNaN(rating)) return "";
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 >= 0.5;
+    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+
+    return "★".repeat(fullStars) + (hasHalfStar ? "½" : "") + "☆".repeat(emptyStars);
+}
+
+/* CATALOG FETCH & RENDERING (index.html) */
 async function loadProductCatalog() {
     const grid = document.getElementById("product-grid");
     if (!grid) return;
@@ -115,6 +119,15 @@ function renderProductCards() {
             ? `<span class="original-price" style="text-decoration: line-through; opacity: 0.6; margin-left: 0.5rem;">${formatPrice(product.originalPriceUSD)}</span>` 
             : "";
 
+        const stars = renderStars(product.rating);
+        const ratingHTML = product.rating ? `
+            <div class="card-rating" style="font-size: 0.85rem; margin: 0.25rem 0; color: #f59e0b; display: flex; align-items: center; gap: 0.35rem;">
+                <span style="letter-spacing: 1px;">${stars}</span>
+                <span style="font-weight: 600;">${product.rating}</span>
+                <span style="color: var(--text-muted, #888); font-size: 0.8rem;">(${product.reviewCount || 0})</span>
+            </div>
+        ` : "";
+
         return `
             <article class="product-card">
                 <a href="product.html?id=${product.id}" class="card-media-link">
@@ -126,6 +139,9 @@ function renderProductCards() {
                     <a href="product.html?id=${product.id}" class="card-title-link">
                         <h3 class="product-title">${product.name}</h3>
                     </a>
+
+                    ${ratingHTML}
+
                     <div class="card-bottom">
                         <div class="price-container">
                             <span class="current-price">${formatPrice(product.priceUSD)}</span>
@@ -144,9 +160,7 @@ function renderProductCards() {
     }).join("");
 }
 
-/* ------------------------------------------
-   MULTI-IMAGE DETAIL PAGE (product.html)
-   ------------------------------------------ */
+/* MULTI-IMAGE DETAIL PAGE (product.html) */
 async function loadProductDetail() {
     const detailContainer = document.getElementById("product-detail-container");
     const urlParams = new URLSearchParams(window.location.search);
@@ -205,11 +219,25 @@ function renderProductDetailPage(product, imageList) {
         </div>
     ` : "";
 
+    // Render Features Array
+    let featuresHTML = "";
+    if (Array.isArray(product.features) && product.features.length > 0) {
+        featuresHTML = `
+            <div class="features-container" style="margin-top: 1.5rem;">
+                <h4 style="margin-bottom: 0.5rem; font-weight: 600;">Key Features</h4>
+                <ul class="features-list" style="padding-left: 1.25rem; line-height: 1.6;">
+                    ${product.features.map(feat => `<li>${feat}</li>`).join("")}
+                </ul>
+            </div>
+        `;
+    }
+
+    // Render Specs Object
     let specsHTML = "";
     if (product.specs && typeof product.specs === "object") {
         specsHTML = `
             <div class="specs-container" style="margin-top: 1.5rem;">
-                <h4 style="margin-bottom: 0.5rem;">Specifications</h4>
+                <h4 style="margin-bottom: 0.5rem; font-weight: 600;">Specifications</h4>
                 <div class="specs-table" id="specs-table">
                     ${Object.entries(product.specs).map(([k, v]) => `
                         <div class="spec-row">
@@ -221,6 +249,16 @@ function renderProductDetailPage(product, imageList) {
             </div>
         `;
     }
+
+    // Render Stars and Review Count
+    const stars = renderStars(product.rating);
+    const ratingHTML = product.rating ? `
+        <div class="p-rating" style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem; font-size: 1rem;">
+            <span style="color: #f59e0b; letter-spacing: 1.5px; font-size: 1.1rem;">${stars}</span>
+            <span style="font-weight: bold; color: var(--text-color, #111);">${product.rating}</span>
+            <span style="opacity: 0.7; font-size: 0.9rem;">(${product.reviewCount || 0} reviews)</span>
+        </div>
+    ` : "";
 
     detailContainer.innerHTML = `
         <div class="product-detail-layout">
@@ -236,6 +274,8 @@ function renderProductDetailPage(product, imageList) {
                 <h1 class="p-title" id="p-title">${product.name}</h1>
                 <p class="p-brand" id="p-brand" style="opacity:0.7; margin-top: 0.25rem;">By ${product.brand || "Pacifix"}</p>
                 
+                ${ratingHTML}
+
                 <div class="price-container" style="margin: 1rem 0;">
                     <span class="p-price" id="p-price" style="font-size: 1.75rem; font-weight: bold;">${formatPrice(product.priceUSD)}</span>
                     ${product.originalPriceUSD ? `<span class="p-orig-price" style="text-decoration: line-through; opacity: 0.6; margin-left: 0.5rem;">${formatPrice(product.originalPriceUSD)}</span>` : ""}
@@ -243,9 +283,10 @@ function renderProductDetailPage(product, imageList) {
 
                 <p class="p-desc" id="product-description">${product.description || "No description provided."}</p>
                 
+                ${featuresHTML}
                 ${specsHTML}
 
-                <div class="p-action-buttons">
+                <div class="p-action-buttons" style="margin-top: 1.5rem;">
                     <button class="btn-action btn-add-cart" id="p-add-cart-btn" onclick="addToCart(${product.id}, event)">
                         <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
@@ -269,9 +310,7 @@ function switchMainImage(src, thumbElement) {
     if (thumbElement) thumbElement.classList.add("active");
 }
 
-/* ------------------------------------------
-   CART SYSTEM & QUANTITY CONTROLS
-   ------------------------------------------ */
+/* CART SYSTEM & QUANTITY CONTROLS */
 function addToCart(productId, event) {
     if (event) event.stopPropagation();
 
@@ -408,9 +447,7 @@ function closeCartDrawer() {
     document.body.style.overflow = "";
 }
 
-/* ------------------------------------------
-   GLOBAL EVENT LISTENERS
-   ------------------------------------------ */
+/* GLOBAL EVENT LISTENERS */
 function setupEventListeners() {
     if (currencyToggle) {
         currencyToggle.addEventListener("click", () => {
@@ -477,7 +514,7 @@ function setupEventListeners() {
                 const data = await response.json();
 
                 if (response.ok && data.success) {
-                    alert("Under Maintainence!");
+                    alert("Order placed successfully!");
                     
                     // Clear cart & close drawer
                     cart = [];
