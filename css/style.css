@@ -489,29 +489,36 @@ body { font-family: var(--font-family); background-color: var(--bg-color); color
     .product-title {
         font-size: 0.875rem;
         margin-bottom: 0.4rem;
+        text-align: center; /* Ensures titles look balanced when centered */
     }
 
     .current-price {
         font-size: 0.95rem;
     }
 
+    /* === CARD BOTTOM & ADD BUTTON MOBILE CENTERING === */
     .card-bottom {
         flex-direction: column;
-        align-items: stretch;
-        gap: 0.5rem;
-        margin-top: 0.5rem;
+        align-items: center;
+        justify-content: center;
+        gap: 0.6rem;
+        margin-top: 0.6rem;
+        width: 100%;
     }
 
     .price-container {
-        justify-content: space-between;
+        justify-content: center;
         width: 100%;
+        text-align: center;
     }
 
     .add-to-cart-btn {
         width: 100%;
+        max-width: 180px;
         justify-content: center;
-        padding: 0.5rem;
+        padding: 0.5rem 0.75rem;
         font-size: 0.8rem;
+        margin: 0 auto;
     }
 
     .p-action-buttons {
