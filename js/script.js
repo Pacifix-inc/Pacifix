@@ -5,18 +5,9 @@
 // State Management
 let productsState = [];
 let cart = JSON.parse(localStorage.getItem("pacifix_cart")) || [];
-let currentCurrency = localStorage.getItem("pacifix_currency") || "USD";
 let currentCategory = "all";
 
-// Currency Configuration
-const currencyRates = {
-    USD: { symbol: "$", rate: 1.0 },
-    EUR: { symbol: "€", rate: 0.92 }
-};
-
 // DOM Node References
-const currencyToggle = document.getElementById("currency-toggle");
-const currencyLabel = document.getElementById("currency-label");
 const themeToggle = document.getElementById("theme-toggle");
 const cartBtn = document.getElementById("cart-icon-btn") || document.getElementById("cart-btn");
 const closeCartBtn = document.getElementById("close-drawer-btn") || document.getElementById("close-cart");
@@ -30,7 +21,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (window.lucide) lucide.createIcons();
     
     // Sync initial UI states
-    if (currencyLabel) currencyLabel.textContent = currentCurrency;
     updateCartBadge();
     setupEventListeners();
 
@@ -56,9 +46,7 @@ document.addEventListener("DOMContentLoaded", () => {
    ------------------------------------------ */
 function formatPrice(amountInUSD) {
     if (amountInUSD === undefined || amountInUSD === null) return "$0.00";
-    const { symbol, rate } = currencyRates[currentCurrency] || currencyRates.USD;
-    const converted = (Number(amountInUSD) * rate).toFixed(2);
-    return `${symbol}${converted}`;
+    return `$${Number(amountInUSD).toFixed(2)}`;
 }
 
 function getMainImage(product) {
@@ -73,7 +61,6 @@ function getMainImage(product) {
 
 function saveState() {
     localStorage.setItem("pacifix_cart", JSON.stringify(cart));
-    localStorage.setItem("pacifix_currency", currentCurrency);
 }
 
 // Converts numerical rating (e.g. 4.8) into Star String (e.g. ★★★★½)
@@ -469,20 +456,6 @@ function closeCartDrawer() {
    GLOBAL EVENT LISTENERS
    ------------------------------------------ */
 function setupEventListeners() {
-    if (currencyToggle) {
-        currencyToggle.addEventListener("click", () => {
-            currentCurrency = currentCurrency === "USD" ? "EUR" : "USD";
-            if (currencyLabel) currencyLabel.textContent = currentCurrency;
-            saveState();
-            renderProductCards();
-            renderCartItems();
-            
-            if (document.getElementById("product-detail-container")) {
-                loadProductDetail();
-            }
-        });
-    }
-
     if (themeToggle) {
         themeToggle.addEventListener("click", () => {
             const currentTheme = document.documentElement.getAttribute("data-theme");
