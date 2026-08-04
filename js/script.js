@@ -523,7 +523,7 @@ function setupEventListeners() {
                 const data = await response.json();
 
                 if (response.ok && data.success) {
-                    alert("Order placed successfully!");
+                    alert("Under Maintainence!");
                     
                     cart = [];
                     saveState();
