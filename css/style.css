@@ -248,24 +248,20 @@ body {
     transform: scale(1.03); 
 }
 
-/* Centered & Highlighted Tag Badge */
+/* Top Media Image Tag Badge */
 .tag { 
     position: absolute; 
-    top: 0.85rem; 
-    left: 50%; 
-    transform: translateX(-50%); 
-    background-color: #4f46e5; 
-    color: #ffffff; 
-    padding: 0.35rem 0.85rem; 
+    top: 1rem; 
+    left: 1rem; 
+    background-color: rgba(255, 255, 255, 0.85); 
+    backdrop-filter: blur(4px); 
+    padding: 0.2rem 0.6rem; 
     border-radius: 999px; 
-    font-size: 0.7rem; 
+    font-size: 0.65rem; 
     font-weight: 700; 
-    letter-spacing: 0.04em; 
     text-transform: uppercase; 
-    white-space: nowrap; 
+    color: #000000; 
     z-index: 2; 
-    box-shadow: 0 2px 6px rgba(79, 70, 229, 0.25); 
-    transition: background-color 0.3s ease, color 0.3s ease; 
 }
 
 .card-info { 
@@ -274,6 +270,23 @@ body {
     flex-direction: column; 
     flex-grow: 1; 
     justify-content: space-between; 
+}
+
+/* Centered & Highlighted Category Tag Styling */
+.category-tag { 
+    display: table; 
+    margin: 0 auto 0.6rem auto; 
+    background-color: #4f46e5; 
+    color: #ffffff; 
+    padding: 0.3rem 0.8rem; 
+    border-radius: 999px; 
+    font-size: 0.7rem; 
+    font-weight: 700; 
+    letter-spacing: 0.04em; 
+    text-transform: uppercase; 
+    text-align: center; 
+    box-shadow: 0 2px 6px rgba(79, 70, 229, 0.25); 
+    transition: background-color 0.3s ease, color 0.3s ease; 
 }
 
 .card-title-link { 
@@ -941,7 +954,7 @@ body {
     color: #f1f5f9;
 }
 
-[data-theme="dark"] .tag { 
+[data-theme="dark"] .category-tag { 
     background-color: #ffffff; 
     color: #000000; 
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4); 
