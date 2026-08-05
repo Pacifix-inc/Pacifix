@@ -523,7 +523,7 @@ function setupEventListeners() {
                 const data = await response.json();
 
                 if (response.ok && data.success) {
-                    alert("Under Maintainence!");
+                    alert("Checkout is currently under maintenance. No order has been placed and no payment has been charged.");
                     
                     cart = [];
                     saveState();
