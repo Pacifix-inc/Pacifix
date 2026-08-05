@@ -81,16 +81,14 @@ body { font-family: var(--font-family); background-color: var(--bg-color); color
     object-fit: cover; 
     object-position: center;
     display: block;
-    transition: transform 0.3s ease;
-    image-rendering: -webkit-optimize-contrast;
-    image-rendering: crisp-edges;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     transform: translateZ(0);
     backface-visibility: hidden;
 }
 
 .product-card:hover .card-img,
 .product-card:hover .card-image-wrapper img {
-    transform: scale(1.04);
+    transform: scale(1.03); /* Scaled down slightly to eliminate blur on zoom */
 }
 
 .tag { position: absolute; top: 1rem; left: 1rem; background-color: rgba(255, 255, 255, 0.85); backdrop-filter: blur(4px); padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; color: #000; z-index: 2; }
@@ -167,6 +165,7 @@ body { font-family: var(--font-family); background-color: var(--bg-color); color
     display: flex;
     flex-direction: column;
     gap: 1rem;
+    width: 100%;
 }
 
 .main-image-wrapper, .main-image-box { 
@@ -174,9 +173,10 @@ body { font-family: var(--font-family); background-color: var(--bg-color); color
     border-radius: 1.5rem; 
     aspect-ratio: 1 / 1; 
     width: 100%;
-    max-height: 500px;
+    height: auto;
     overflow: hidden; 
     margin-bottom: 1rem; 
+    position: relative;
 }
 [data-theme="dark"] .main-image-box,
 [data-theme="dark"] .main-image-wrapper { background-color: #262626; }
@@ -190,9 +190,6 @@ body { font-family: var(--font-family); background-color: var(--bg-color); color
     object-fit: cover;
     object-position: center;
     display: block;
-    border-radius: 8px;
-    image-rendering: -webkit-optimize-contrast;
-    image-rendering: crisp-edges;
 }
 
 .thumbnail-gallery, .thumbnail-list {
@@ -208,11 +205,13 @@ body { font-family: var(--font-family); background-color: var(--bg-color); color
     flex-shrink: 0;
     object-fit: cover;
     object-position: center;
-    border-radius: 6px;
-    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    border: 2px solid var(--border-color);
     cursor: pointer;
     transition: border-color 0.2s ease, opacity 0.2s ease;
+    background-color: #efeeea;
 }
+[data-theme="dark"] .thumb-item { background-color: #262626; }
 
 .thumb-item:hover {
     opacity: 0.8;
@@ -322,7 +321,9 @@ body { font-family: var(--font-family); background-color: var(--bg-color); color
     object-fit: cover;
     object-position: center;
     border-radius: 6px;
+    background-color: #efeeea;
 }
+[data-theme="dark"] .cart-item-img { background-color: #262626; }
 
 .cart-item-info, .cart-item-details {
     flex: 1;
@@ -426,7 +427,7 @@ body { font-family: var(--font-family); background-color: var(--bg-color); color
     }
 
     .main-image-wrapper, .main-image-box {
-        max-height: 380px;
+        max-height: 450px;
     }
 
     .p-title {
